@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASINO MATRIX PRO // MULTI-GAME ENGINE SUITE</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- TOP NAVBAR -->
+        <header class="top-nav">
+            <div class="nav-brand">
+                <span class="brand-icon">🎰</span>
+                <h2>CASINO MATRIX <span class="badge-suite">7-IN-1 PRO ENGINE</span></h2>
+            </div>
+
+            <div class="nav-right">
+                <div class="wallet-box">
+                    <span class="wallet-label">DEMO BALANCE</span>
+                    <span class="wallet-amount" id="user-balance">$1,000.00</span>
+                </div>
+                <button id="btn-sound" class="btn-icon">🔊 SOUND ON</button>
+            </div>
+        </header>
+
+        <!-- MAIN DASHBOARD CONTENT -->
+        <main class="dashboard-content" id="dashboard-view">
+            <!-- HERO BANNER -->
+            <div class="hero-banner glass-panel">
+                <div class="hero-text">
+                    <h1>PROVABLY FAIR MULTI-GAME ENGINE HUB</h1>
+                    <p>Play Aviator, Mines, Plinko, Dice, Wheel of Fortune, 3x3 Slots & HiLo Cards seamlessly.</p>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat"><span class="val">7</span><span class="lbl">GAMES</span></div>
+                    <div class="stat"><span class="val">97.0%</span><span class="lbl">RTP</span></div>
+                    <div class="stat"><span class="val">HMAC-256</span><span class="lbl">FAIR</span></div>
+                </div>
+            </div>
+
+            <!-- GAMES GRID TITLE & FILTERS -->
+            <div class="section-header">
+                <h3>🔥 FEATURED CASINO & ARCADE GAMES</h3>
+                <div class="game-filters">
+                    <button class="filter-btn active" data-filter="all">All Games</button>
+                    <button class="filter-btn" data-filter="arcade">Arcade</button>
+                    <button class="filter-btn" data-filter="casino">Casino</button>
+                </div>
+            </div>
+
+            <!-- GAMES CARD GRID -->
+            <div class="games-grid" id="games-grid">
+                <!-- Game cards rendered dynamically -->
+            </div>
+        </main>
+
+        <!-- GAME STAGE VIEW (HIDDEN BY DEFAULT) -->
+        <div class="game-stage-view" id="stage-view" style="display: none;">
+            <div class="stage-header">
+                <button id="btn-back-hub" class="btn-back">← BACK TO GAMES HUB</button>
+                <h2 id="stage-game-title">Game Title</h2>
+                <span class="fair-badge">🔒 Provably Fair HMAC-SHA256</span>
+            </div>
+
+            <!-- DYNAMIC GAME CONTAINER -->
+            <div class="game-container-box glass-panel" id="game-container">
+                <!-- Active game UI injected dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
