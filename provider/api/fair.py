@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from .. import rng
 from ..db import get_db
 from ..games import GAMES, ParamError
-from ..games import mines as mines_math
 from ..games.crash import crash_point_x100
 from ..models import CrashGame
 from ..services.errors import GameError
@@ -27,8 +26,9 @@ def verify(body: VerifyIn):
     rtp = body.rtp or engine.default_rtp
     floats = rng.floats(body.server_seed, body.client_seed, body.nonce, engine.floats_needed(params))
     out = {"server_seed_hash": rng.hash_seed(body.server_seed), "floats": floats, "params": params, "rtp": rtp}
-    if engine.id == "mines":
-        out["mines"] = mines_math.layout(floats, params["mines"])
+    if engine.kind == "stateful":
+        secret, _ = engine.start(floats, params, rtp)
+        out["secret"] = secret
     else:
         o = engine.resolve(floats, params, rtp)
         out |= {"multiplier": o.multiplier_x100 / 100, "result": o.result}

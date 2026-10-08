@@ -31,9 +31,9 @@ export class Api {
   init() { return this.req('GET', '/api/v1/client/init'); }
   balance() { return this.req('GET', '/api/v1/client/balance'); }
   bet(amount, params) { return this.req('POST', '/api/v1/client/bet', { amount, params }); }
-  minesStart(amount, mines) { return this.req('POST', '/api/v1/client/mines/start', { amount, mines }); }
-  minesReveal(tile) { return this.req('POST', '/api/v1/client/mines/reveal', { tile }); }
-  minesCashout() { return this.req('POST', '/api/v1/client/mines/cashout', {}); }
+  roundStart(amount, params) { return this.req('POST', '/api/v1/client/round/start', { amount, params }); }
+  roundAct(action) { return this.req('POST', '/api/v1/client/round/act', { action }); }
+  roundCashout() { return this.req('POST', '/api/v1/client/round/cashout', {}); }
   history(limit = 25) { return this.req('GET', `/api/v1/client/history?limit=${limit}`); }
   seeds() { return this.req('GET', '/api/v1/client/seeds'); }
   rotate(clientSeed) { return this.req('POST', '/api/v1/client/seeds/rotate', { client_seed: clientSeed || null }); }

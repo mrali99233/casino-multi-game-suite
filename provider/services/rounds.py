@@ -13,7 +13,6 @@ from sqlalchemy.orm import Session
 
 from .. import rng
 from ..games import GAMES, ParamError
-from ..games import mines as mines_math
 from ..models import GameSession, Round, Transaction, utcnow
 from ..wallet import WalletError
 from . import ledger
@@ -136,91 +135,104 @@ def play_instant(db: Session, session: GameSession, amount: int, params: dict) -
     if engine.kind != "instant":
         raise GameError("WRONG_ENDPOINT", f"{engine.name} is not an instant game")
     params = _validate(engine, params)
+    try:
+        engine.check_amount(params, amount)
+    except ParamError as exc:
+        raise GameError("BAD_PARAMS", str(exc)) from None
     cfg = effective_config(db, session.operator_id, session.game_id)
     _check_bet(cfg, amount)
     rnd, pair = _open_round(db, session, amount, params, cfg)
     balance = _debit(db, session, rnd)
     out = engine.resolve(rng.floats(pair.server_seed, pair.client_seed, rnd.nonce, engine.floats_needed(params)), params, cfg.rtp)
-    payout = min(amount * out.multiplier_x100 // 100, cfg.max_win)
+    gross = out.payout if out.payout is not None else amount * out.multiplier_x100 // 100
+    payout = min(gross, cfg.max_win)
     rnd.multiplier_x100 = out.multiplier_x100
     rnd.result = out.result
     balance = settle(db, session, rnd, payout, balance)
     return round_view(rnd, balance)
 
 
-# ---- mines -----------------------------------------------------------------------------
+# ---- stateful games (Mines, HiLo, Dragon Tower) -----------------------------------------
 
 
-def open_mines_round(db: Session, session: GameSession) -> Round | None:
+def open_round(db: Session, session: GameSession) -> Round | None:
     return db.scalar(
-        select(Round).where(Round.player_id == session.player_id, Round.game_id == "mines", Round.status == "open")
+        select(Round).where(Round.player_id == session.player_id, Round.game_id == session.game_id, Round.status == "open")
     )
 
 
-def _mines_view(rnd: Round, balance: int | None = None, reveal: bool = False) -> dict:
-    view = round_view(rnd, balance, reveal)
-    n, k = rnd.params["mines"], len(rnd.result.get("revealed", []))
-    view["next_multiplier"] = mines_math.multiplier_x100(n, k + 1, rnd.rtp) / 100 if k < 25 - n else None
-    view["cashout_amount"] = rnd.bet * mines_math.multiplier_x100(n, k, rnd.rtp) // 100 if k else 0
+def stateful_view(rnd: Round, balance: int | None = None) -> dict:
+    engine = GAMES[rnd.game_id]
+    finished = rnd.status != "open"
+    view = round_view(rnd, balance, reveal=finished)
+    view |= engine.view(rnd.result, rnd.params, rnd.rtp)
+    view["cashout_multiplier"] = engine.multiplier_x100(rnd.result, rnd.params, rnd.rtp) / 100 if not finished else rnd.multiplier_x100 / 100
+    view["cashout_amount"] = rnd.bet * engine.multiplier_x100(rnd.result, rnd.params, rnd.rtp) // 100 if not finished else rnd.payout
     return view
 
 
-def mines_start(db: Session, session: GameSession, amount: int, mines: int) -> dict:
-    if session.game_id != "mines":
-        raise GameError("WRONG_ENDPOINT", "Session is not for Mines")
-    if open_mines_round(db, session):
+def _stateful_engine(session: GameSession):
+    engine = engine_or_404(session.game_id)
+    if engine.kind != "stateful":
+        raise GameError("WRONG_ENDPOINT", f"{engine.name} is not a multi-step game")
+    return engine
+
+
+def round_start(db: Session, session: GameSession, amount: int, params: dict) -> dict:
+    engine = _stateful_engine(session)
+    if open_round(db, session):
         raise GameError("ROUND_OPEN", "Finish the current round first", 409)
-    engine = GAMES["mines"]
-    params = _validate(engine, {"mines": mines})
-    cfg = effective_config(db, session.operator_id, "mines")
+    params = _validate(engine, params)
+    cfg = effective_config(db, session.operator_id, session.game_id)
     _check_bet(cfg, amount)
     rnd, pair = _open_round(db, session, amount, params, cfg)
-    rnd.secret = {"mines": mines_math.layout(rng.floats(pair.server_seed, pair.client_seed, rnd.nonce, 24), params["mines"])}
-    rnd.result = {"revealed": []}
+    secret, state = engine.start(rng.floats(pair.server_seed, pair.client_seed, rnd.nonce, engine.floats_needed(params)), params, cfg.rtp)
+    rnd.secret, rnd.result = secret, state
     db.commit()
     balance = _debit(db, session, rnd)
-    return _mines_view(rnd, balance)
+    return stateful_view(rnd, balance)
 
 
 def _require_open(db: Session, session: GameSession) -> Round:
-    rnd = open_mines_round(db, session)
+    rnd = open_round(db, session)
     if rnd is None:
-        raise GameError("NO_ROUND", "No Mines round in progress", 409)
+        raise GameError("NO_ROUND", "No round in progress", 409)
     return rnd
 
 
-def mines_reveal(db: Session, session: GameSession, tile: int) -> dict:
-    rnd = _require_open(db, session)
-    revealed = list(rnd.result.get("revealed", []))
-    if not isinstance(tile, int) or not 0 <= tile < 25:
-        raise GameError("BAD_TILE", "Tile must be 0..24")
-    if tile in revealed:
-        raise GameError("TILE_OPEN", "Tile already revealed")
-    if tile in rnd.secret["mines"]:
-        rnd.result = {"revealed": revealed, "mine_hit": tile}
-        rnd.multiplier_x100 = 0
-        balance = settle(db, session, rnd, 0, ledger.balance(db, session.player, session.is_demo))
-        return _mines_view(rnd, balance, reveal=True)
-    revealed.append(tile)
-    n = rnd.params["mines"]
-    rnd.result = {"revealed": revealed}
-    rnd.multiplier_x100 = mines_math.multiplier_x100(n, len(revealed), rnd.rtp)
-    db.commit()
-    if len(revealed) == 25 - n:
-        return mines_cashout(db, session)
-    return _mines_view(rnd)
-
-
-def mines_cashout(db: Session, session: GameSession) -> dict:
-    rnd = _require_open(db, session)
-    k = len(rnd.result.get("revealed", []))
-    if k == 0:
-        raise GameError("NOTHING_TO_CASH", "Reveal at least one tile first")
-    cfg = effective_config(db, session.operator_id, "mines")
-    payout = min(rnd.bet * rnd.multiplier_x100 // 100, cfg.max_win)
-    rnd.result = {**rnd.result, "cashed_out": True}
+def _close(db: Session, session: GameSession, rnd: Round, mult_x100: int) -> dict:
+    cfg = effective_config(db, session.operator_id, session.game_id)
+    rnd.multiplier_x100 = mult_x100
+    payout = min(rnd.bet * mult_x100 // 100, cfg.max_win)
     balance = settle(db, session, rnd, payout, ledger.balance(db, session.player, session.is_demo))
-    return _mines_view(rnd, balance, reveal=True)
+    return stateful_view(rnd, balance)
+
+
+def round_act(db: Session, session: GameSession, action: dict) -> dict:
+    engine = _stateful_engine(session)
+    rnd = _require_open(db, session)
+    try:
+        step = engine.act(rnd.secret, rnd.result, rnd.params, rnd.rtp, action or {})
+    except ParamError as exc:
+        raise GameError("BAD_ACTION", str(exc)) from None
+    rnd.result = step.state
+    if step.status == "lost":
+        return _close(db, session, rnd, 0)
+    if step.status == "cashout":
+        return _close(db, session, rnd, step.multiplier_x100)
+    rnd.multiplier_x100 = step.multiplier_x100
+    db.commit()
+    return stateful_view(rnd)
+
+
+def round_cashout(db: Session, session: GameSession) -> dict:
+    engine = _stateful_engine(session)
+    rnd = _require_open(db, session)
+    mult = engine.multiplier_x100(rnd.result, rnd.params, rnd.rtp)
+    if mult <= 0:
+        raise GameError("NOTHING_TO_CASH", "Make at least one winning move first")
+    rnd.result = {**rnd.result, "cashed_out": True}
+    return _close(db, session, rnd, mult)
 
 
 # ---- history ---------------------------------------------------------------------------

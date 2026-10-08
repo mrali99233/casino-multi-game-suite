@@ -39,3 +39,7 @@ class Crash(GameEngine):
     def theoretical_rtp(self, params, rtp):
         target = float(params.get("cashout", 2.0))
         return min(1.0, rtp / target) * target
+
+    def simulate_once(self, rand, params, rtp):
+        target = int(round(float(params.get("cashout", 2.0)) * 100))
+        return target / 100 if crash_point_x100(rand(), rtp) >= target else 0.0

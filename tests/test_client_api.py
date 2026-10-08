@@ -56,28 +56,30 @@ def test_seed_rotation_reveals_seed_and_verify_reproduces_round(client):
 
 def test_mines_full_flow(client):
     h = demo_session(client, "mines")
-    start = client.post("/api/v1/client/mines/start", json={"amount": 1000, "mines": 3}, headers=h).json()
+    start = client.post("/api/v1/client/round/start", json={"amount": 1000, "params": {"mines": 3}}, headers=h).json()
     assert start["status"] == "open" and "mines" not in start["result"] and start["balance"] == 99_000
-    assert client.post("/api/v1/client/mines/start", json={"amount": 1000, "mines": 3}, headers=h).status_code == 409
+    assert client.post("/api/v1/client/round/start", json={"amount": 1000, "params": {"mines": 3}}, headers=h).status_code == 409
     assert client.post("/api/v1/client/seeds/rotate", json={}, headers=h).json()["error"]["code"] == "ROUND_OPEN"
     with SessionLocal() as db:
         mines = db.get(Round, start["round_id"]).secret["mines"]
     safe = [t for t in range(25) if t not in mines]
-    r1 = client.post("/api/v1/client/mines/reveal", json={"tile": safe[0]}, headers=h).json()
-    r2 = client.post("/api/v1/client/mines/reveal", json={"tile": safe[1]}, headers=h).json()
+    r1 = client.post("/api/v1/client/round/act", json={"action": {"tile": safe[0]}}, headers=h).json()
+    r2 = client.post("/api/v1/client/round/act", json={"action": {"tile": safe[1]}}, headers=h).json()
     assert r2["result"]["revealed"] == safe[:2] and r2["multiplier"] > r1["multiplier"] > 1
     # resuming: init returns the open round
     assert client.get("/api/v1/client/init", headers=h).json()["open_round"]["round_id"] == start["round_id"]
-    cash = client.post("/api/v1/client/mines/cashout", headers=h).json()
+    cash = client.post("/api/v1/client/round/cashout", headers=h).json()
     assert cash["status"] == "settled" and sorted(cash["result"]["mines"]) == sorted(mines)
     assert cash["payout"] == 1000 * round(cash["multiplier"] * 100) // 100
     assert cash["balance"] == 99_000 + cash["payout"]
     # second round: hit a mine
-    s2 = client.post("/api/v1/client/mines/start", json={"amount": 1000, "mines": 24}, headers=h).json()
+    s2 = client.post("/api/v1/client/round/start", json={"amount": 1000, "params": {"mines": 24}}, headers=h).json()
     with SessionLocal() as db:
         mine = db.get(Round, s2["round_id"]).secret["mines"][0]
-    boom = client.post("/api/v1/client/mines/reveal", json={"tile": mine}, headers=h).json()
+    boom = client.post("/api/v1/client/round/act", json={"action": {"tile": mine}}, headers=h).json()
     assert boom["status"] == "settled" and boom["payout"] == 0 and boom["result"]["mine_hit"] == mine
+    assert client.post("/api/v1/client/round/act", json={"action": {"tile": 0}}, headers=h).json()["error"]["code"] == "NO_ROUND"
+    assert client.post("/api/v1/client/round/start", json={"amount": 1000, "params": {"mines": 30}}, headers=h).json()["error"]["code"] == "BAD_PARAMS"
 
 
 def test_history_lists_settled_rounds(client):

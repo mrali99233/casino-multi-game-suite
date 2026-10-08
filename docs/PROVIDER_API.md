@@ -49,8 +49,13 @@ POST /api/v1/operator/sessions
 ```
 
 Open `launch_url` in an iframe or a new window. `mode: "demo"` gives the player play money on the
-provider side and never touches your wallet. Game ids: `crash`, `plinko`, `mines`, `dice`, `wheel`
+provider side and never touches your wallet. Game ids: `crash`, `plinko`, `mines`, `slots`, `roulette`,
+`hilo`, `tower`, `limbo`, `dice`, `keno`, `wheel`, `diamonds`, `coinflip`
 (`GET /api/v1/operator/games` lists them with your current RTP and limits).
+
+Multi-step games (`mines`, `hilo`, `tower`) debit when the round starts and credit when the player cashes
+out or loses, so a round can stay open between the two calls. An open round is resumed when the player
+relaunches the game.
 
 ## 4. Wallets
 
@@ -105,7 +110,7 @@ PUT /api/v1/operator/games/plinko/config
 
 RTP must sit inside the game's range (`rtp_range` in the games list, usually 0.90–0.99). RTP changes the
 payout table, never the RNG: every round stays verifiable. The crash room is shared by all operators,
-so its RTP is set provider-wide.
+so its RTP is set provider-wide. Roulette uses standard European payouts, so its RTP is fixed at 97.30%.
 
 ## 7. Fairness
 

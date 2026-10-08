@@ -145,7 +145,7 @@ export function mount({ api, init, money, shell, stage, sound, ui }) {
     if (bet > shell.wallet.available) { ui.toast('Not enough balance for this bet', 'err'); return; }
     st.busy = true; renderControls();
     try {
-      const r = await api.minesStart(bet, st.mines);
+      const r = await api.roundStart(bet, { mines: st.mines });
       resetBoard();
       st.round = r; shell.wallet.sync(r.balance); sound.bet();
       tiles.forEach((t, i) => { t.animate([{ transform: 'scale(.85)', opacity: 0.4 }, { transform: 'none', opacity: 1 }], { duration: 380, delay: (i % 5) * 30 + Math.floor(i / 5) * 30, easing: 'cubic-bezier(.2,1.4,.4,1)', fill: 'backwards' }); });
@@ -157,7 +157,7 @@ export function mount({ api, init, money, shell, stage, sound, ui }) {
     if (!st.round || st.busy || tiles[i].classList.contains('open')) return;
     st.busy = true; renderControls(); sound.flip();
     let r;
-    try { r = await api.minesReveal(i); } catch (e) { ui.toast(e.message, 'err'); st.busy = false; renderControls(); return; }
+    try { r = await api.roundAct({ tile: i }); } catch (e) { ui.toast(e.message, 'err'); st.busy = false; renderControls(); return; }
     st.busy = false;
     if (r.result.mine_hit !== undefined) {
       const t = tiles[i];
@@ -196,7 +196,7 @@ export function mount({ api, init, money, shell, stage, sound, ui }) {
   async function cashout() {
     if (!st.round || st.busy) return;
     st.busy = true; renderControls();
-    try { finishWin(await api.minesCashout()); } catch (e) { ui.toast(e.message, 'err'); }
+    try { finishWin(await api.roundCashout()); } catch (e) { ui.toast(e.message, 'err'); }
     st.busy = false; renderLadder(); renderInfo(); renderControls();
   }
 

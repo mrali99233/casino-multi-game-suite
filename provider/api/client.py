@@ -14,7 +14,7 @@ from ..services.configs import GLOBAL, effective_config
 from ..services.errors import GameError
 from ..wallet import WalletError
 from .deps import game_session
-from .schemas import BetIn, MinesRevealIn, MinesStartIn, SeedRotateIn
+from .schemas import ActionIn, BetIn, SeedRotateIn
 
 router = APIRouter(prefix="/api/v1/client", tags=["game client"])
 
@@ -25,13 +25,13 @@ def init(s: GameSession = Depends(game_session), db: Session = Depends(get_db)):
     cfg = effective_config(db, GLOBAL if s.game_id == "crash" else s.operator_id, s.game_id)
     limits = effective_config(db, s.operator_id, s.game_id)
     p = s.player
-    open_round = rounds.open_mines_round(db, s) if s.game_id == "mines" else None
+    open_round = rounds.open_round(db, s) if engine.kind == "stateful" else None
     return {
         "player": {"nickname": p.nickname, "currency": p.currency, "demo": s.is_demo},
         "balance": ledger.balance(db, p, s.is_demo),
         "game": engine.meta() | {"rtp": cfg.rtp, "min_bet": limits.min_bet, "max_bet": limits.max_bet, "max_win": limits.max_win, "enabled": limits.enabled, "data": engine.describe(cfg.rtp)},
         "fairness": players.seed_view(players.active_seed(db, p)),
-        "open_round": rounds._mines_view(open_round) if open_round else None,
+        "open_round": rounds.stateful_view(open_round) if open_round else None,
         "return_url": s.return_url,
     }
 
@@ -46,19 +46,19 @@ def bet(body: BetIn, s: GameSession = Depends(game_session), db: Session = Depen
     return rounds.play_instant(db, s, body.amount, body.params)
 
 
-@router.post("/mines/start")
-def mines_start(body: MinesStartIn, s: GameSession = Depends(game_session), db: Session = Depends(get_db)):
-    return rounds.mines_start(db, s, body.amount, body.mines)
+@router.post("/round/start")
+def round_start(body: BetIn, s: GameSession = Depends(game_session), db: Session = Depends(get_db)):
+    return rounds.round_start(db, s, body.amount, body.params)
 
 
-@router.post("/mines/reveal")
-def mines_reveal(body: MinesRevealIn, s: GameSession = Depends(game_session), db: Session = Depends(get_db)):
-    return rounds.mines_reveal(db, s, body.tile)
+@router.post("/round/act")
+def round_act(body: ActionIn, s: GameSession = Depends(game_session), db: Session = Depends(get_db)):
+    return rounds.round_act(db, s, body.action)
 
 
-@router.post("/mines/cashout")
-def mines_cashout(s: GameSession = Depends(game_session), db: Session = Depends(get_db)):
-    return rounds.mines_cashout(db, s)
+@router.post("/round/cashout")
+def round_cashout(s: GameSession = Depends(game_session), db: Session = Depends(get_db)):
+    return rounds.round_cashout(db, s)
 
 
 @router.get("/history")

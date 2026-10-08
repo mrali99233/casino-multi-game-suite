@@ -115,7 +115,7 @@
 </div>
 <script type="module">
 const $ = (s) => document.querySelector(s);
-const SIM_DEFAULTS = { crash: { cashout: 2 }, plinko: { rows: 16, risk: 'high' }, mines: { mines: 3, picks: 5 }, dice: { target: 50.5, condition: 'over' }, wheel: { risk: 'medium' } };
+const SIM_DEFAULTS = { crash: { cashout: 2 }, plinko: { rows: 16, risk: 'high' }, mines: { mines: 3, picks: 5 }, dice: { target: 50.5, condition: 'over' }, wheel: { risk: 'medium' }, limbo: { target: 10 }, hilo: { streak: 3 }, slots: {}, tower: { difficulty: 'medium', rows: 4 }, keno: { numbers: [3, 8, 15, 22, 31], risk: 'medium' }, roulette: { chips: [{ type: 'red', amount: 100 }] }, diamonds: {}, coinflip: { side: 'heads' } };
 let token = '';
 try { token = sessionStorage.getItem('cm-admin') || ''; } catch (e) { /* ignore */ }
 const fmt = (minor) => (minor / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });

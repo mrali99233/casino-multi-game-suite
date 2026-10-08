@@ -30,13 +30,8 @@ class BetIn(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
 
 
-class MinesStartIn(BaseModel):
-    amount: int
-    mines: int = 3
-
-
-class MinesRevealIn(BaseModel):
-    tile: int
+class ActionIn(BaseModel):
+    action: dict[str, Any] = Field(default_factory=dict)
 
 
 class SeedRotateIn(BaseModel):

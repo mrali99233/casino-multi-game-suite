@@ -265,9 +265,9 @@ export async function openFairness(api, init) {
         box.append(h('h3', {}, 'Recomputed from the revealed seed'), h('table', {},
           h('thead', {}, h('tr', {}, h('th', {}, 'Nonce'), h('th', {}, 'Your result'), h('th', {}, 'Recomputed'))),
           h('tbody', {}, checks.map(([r, v]) => {
-            const recomputed = v ? (v.mines ? `mines ${v.mines.join(', ')}` : fmtMult(v.multiplier)) : 'error';
-            const same = v && (v.mines
-              ? JSON.stringify(v.mines) === JSON.stringify([...(r.result.mines || [])].sort((x, y) => x - y))
+            const recomputed = v ? (v.secret ? 'same hidden layout' : fmtMult(v.multiplier)) : 'error';
+            const same = v && (v.secret
+              ? Object.entries(v.secret).every(([k, val]) => JSON.stringify(val) === JSON.stringify(r.result[k]))
               : JSON.stringify(v.result) === JSON.stringify(r.result) && v.multiplier === r.multiplier);
             return h('tr', {}, h('td', { class: 'num' }, String(r.fairness.nonce)), h('td', { class: 'num' }, fmtMult(r.multiplier)), h('td', { class: 'num', style: `color:${same ? 'var(--green)' : 'var(--red)'}` }, `${recomputed} ${same ? '✓' : '✗'}`));
           }))));
