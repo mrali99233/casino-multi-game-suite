@@ -71,7 +71,7 @@ export function buildShell(root, { name, demo, returnUrl, money }) {
 
   // Wallet display: server balance minus winnings still "in flight" in an animation.
   const wallet = {
-    server: 0, held: 0, shown: 0,
+    server: 0, held: 0, shown: 0, gen: 0,
     sync(balance) { if (typeof balance === 'number') { this.server = balance; this.render(); } },
     hold(amount) { this.held += amount; this.render(); },
     release(amount) { this.held = Math.max(0, this.held - amount); this.render(true); },
@@ -81,8 +81,9 @@ export function buildShell(root, { name, demo, returnUrl, money }) {
       const from = this.shown;
       this.shown = target;
       const box = { v: from };
+      const gen = ++this.gen;  // a newer update cancels any count-up still running
       if (target > from && celebrate) { balanceEl.classList.add('up'); setTimeout(() => balanceEl.classList.remove('up'), 700); }
-      tween(box, { v: target }, { dur: target > from ? 0.6 : 0.2, ease: ease.outCubic, onUpdate: () => { balanceEl.textContent = money.fmt(Math.round(box.v)); } });
+      tween(box, { v: target }, { dur: target > from ? 0.6 : 0.2, ease: ease.outCubic, onUpdate: () => { if (gen === this.gen) balanceEl.textContent = money.fmt(Math.round(box.v)); } });
     },
   };
 

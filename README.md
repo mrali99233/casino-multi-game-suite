@@ -26,6 +26,11 @@ seamless wallets, per-operator RTP control, and polished HTML5 Canvas game clien
 | Dragon Tiger | Instant | win and tie returns fitted to RTP | 97% |
 | Andar Bahar | Instant, single deck | exact side odds C(51 − j, 2) / C(51, 3) | 97% |
 | Teen Patti | Instant, A vs B + Pair Plus | suit tie-break makes A/B exactly 50/50; Pair Plus fitted over all 22,100 hands | 97% |
+| Galaxy Riches | Instant 5×3 video slot, 20 lines, wilds, 10 free spins at 3× | closed-form line odds per reel + binomial scatters, paytable fitted incl. free spins | 96% |
+| Chicken Road | Multi-step, 4 difficulties | RTP / p^lanes | 97% |
+| Scratch Card | Instant, 3×3 match-three | prize drawn from fixed odds, card built to show it | 97% |
+| Cases | Instant, 4 cases × 7 items | item odds fixed, multipliers fitted | 97% |
+| Rock Paper Scissors | Multi-step streak | RTP × 2^wins (draws replay) | 97% |
 
 Every multiplier is rounded **down** to 0.01×, so a game's expected return never exceeds its configured RTP.
 Roulette and Baccarat keep their standard payouts, so their RTP is fixed by the rules. Blackjack and
@@ -91,6 +96,6 @@ open the `launch_url`, and either fund a transfer wallet or answer seamless debi
    wallet display, fairness and history modals, particles, tweens and sounds.
 4. Add a simulation case to the tests and check it with `python -m provider.sim <id>`.
 
-## Roadmap
+## Status
 
-Phase 4 adds a 5×3 video slot with free spins, Chicken Road, Scratch Card, Cases and Rock Paper Scissors.
+All 24 planned games are live. New titles follow the steps in "Adding a game".

@@ -2,6 +2,8 @@ from .base import GameEngine, Outcome, ParamError, StatefulEngine, Step
 from .andarbahar import AndarBahar
 from .baccarat import Baccarat
 from .blackjack import Blackjack
+from .cases import Cases
+from .chicken import ChickenRoad
 from .coinflip import CoinFlip
 from .crash import Crash
 from .diamonds import Diamonds
@@ -13,10 +15,13 @@ from .limbo import Limbo
 from .mines import Mines
 from .plinko import Plinko
 from .roulette import Roulette
+from .rps import RockPaperScissors
+from .scratch import Scratch
 from .slots import Slots
 from .teenpatti import TeenPatti
 from .tower import Tower
 from .videopoker import VideoPoker
+from .videoslot import VideoSlot
 from .wheel import Wheel
 
 GAMES: dict[str, GameEngine] = {
@@ -24,6 +29,7 @@ GAMES: dict[str, GameEngine] = {
     for g in (
         Crash(), Plinko(), Mines(), Dice(), Wheel(), Limbo(), HiLo(), Slots(), Tower(), Keno(), Roulette(), Diamonds(), CoinFlip(),
         Blackjack(), Baccarat(), VideoPoker(), DragonTiger(), AndarBahar(), TeenPatti(),
+        VideoSlot(), ChickenRoad(), Scratch(), Cases(), RockPaperScissors(),
     )
 }
 

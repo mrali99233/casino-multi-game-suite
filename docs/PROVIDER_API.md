@@ -51,13 +51,14 @@ POST /api/v1/operator/sessions
 Open `launch_url` in an iframe or a new window. `mode: "demo"` gives the player play money on the
 provider side and never touches your wallet. Game ids: `crash`, `plinko`, `mines`, `slots`, `roulette`,
 `hilo`, `tower`, `limbo`, `dice`, `keno`, `wheel`, `diamonds`, `coinflip`, `blackjack`, `baccarat`,
-`videopoker`, `dragontiger`, `andarbahar`, `teenpatti`
+`videopoker`, `dragontiger`, `andarbahar`, `teenpatti`, `videoslot`, `chicken`, `scratch`, `cases`, `rps`
 (`GET /api/v1/operator/games` lists them with your current RTP and limits).
 
-Multi-step games (`mines`, `hilo`, `tower`, `blackjack`, `videopoker`) debit when the round starts and credit
+Multi-step games (`mines`, `hilo`, `tower`, `blackjack`, `videopoker`, `chicken`, `rps`) debit when the round starts and credit
 when the player cashes out or loses, so a round can stay open between the two calls. Blackjack doubles and
 splits send an extra `debit` for the same `round_id` before the card is dealt; the final `credit` covers
-every stake in the round. An open round is resumed when the player
+every stake in the round. The video slot settles its free spins inside the same round as the spin that
+triggered them, so a round can pay many times the stake in a single credit. An open round is resumed when the player
 relaunches the game.
 
 ## 4. Wallets

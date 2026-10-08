@@ -81,10 +81,10 @@
   <header class="hero">
     <div>
       <h1>Provably fair games, <em>ready to plug in.</em></h1>
-      <p>Nineteen live titles with server-side math, per-operator RTP control and an HMAC-signed integration API. Play the demos below with free credits.</p>
+      <p>Twenty-four live titles with server-side math, per-operator RTP control and an HMAC-signed integration API. Play the demos below with free credits.</p>
       <div class="cta"><a class="btn btn-bet" href="#games">Play demos</a><a class="btn btn-ghost" href="#operators">Integrate the API</a></div>
       <div class="facts">
-        <div><b class="num" id="fact-games">19</b><span>games live</span></div>
+        <div><b class="num" id="fact-games">24</b><span>games live</span></div>
         <div><b class="num">90–99.5%</b><span>configurable RTP</span></div>
         <div><b class="num">HMAC-256</b><span>verifiable rounds</span></div>
       </div>
@@ -98,7 +98,7 @@
     <div class="games" id="grid"></div>
   </section>
 
-  <section>
+  <section id="roadmap-sec">
     <h2 class="sec">On the roadmap</h2>
     <p class="sec">Each new title plugs into the same engine: shared wallet, shared fairness, its own math model.</p>
     <div class="roadmap" id="roadmap"></div>
@@ -159,8 +159,13 @@ ART.videopoker = '<svg viewBox="0 0 120 90">' + ['A', 'K', 'Q', 'J', '10'].map((
 ART.dragontiger = '<svg viewBox="0 0 120 90"><text x="26" y="16" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="9" fill="#ff6b4a">DRAGON</text><text x="94" y="16" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="9" fill="#4ad7ff">TIGER</text>' + cardSvg(8, 24, 'Q', '♥', true) + cardSvg(76, 24, '7', '♣', false) + '<text x="60" y="56" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="16" fill="#ffc53d">VS</text></svg>';
 ART.andarbahar = '<svg viewBox="0 0 120 90">' + cardSvg(42, 4, '7', '♠', false) + [0, 1, 2, 3].map((i) => cardSvg(4 + i * 12, 58 - 26, '', '', false)).join('') + '<rect x="2" y="62" width="116" height="24" rx="6" fill="rgba(0,0,0,.25)"/><text x="30" y="78" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="10" fill="#ff8a1f">ANDAR</text><text x="90" y="78" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="10" fill="#22d3ee">BAHAR</text></svg>';
 ART.teenpatti = '<svg viewBox="0 0 120 90">' + cardSvg(22, 22, 'A', '♠', false, -14) + cardSvg(42, 18, 'A', '♥', true, 0) + cardSvg(62, 22, 'A', '♦', true, 14) + '<text x="60" y="88" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="9" fill="#ffc53d">TRAIL</text></svg>';
-const COLORS = { blackjack: '#1fe58f', baccarat: '#5aa8ff', videopoker: '#ffc53d', dragontiger: '#ff6b4a', andarbahar: '#ff8a1f', teenpatti: '#ff3d81', crash: '#ff4766', plinko: '#ff3d81', mines: '#1fe58f', dice: '#22d3ee', wheel: '#8b5cf6', limbo: '#1fe58f', hilo: '#22d3ee', slots: '#ffc53d', tower: '#ff8a1f', keno: '#8b5cf6', roulette: '#c4123a', diamonds: '#22d3ee', coinflip: '#ffc53d' };
-const ROADMAP = [['5×3 Video Slot', 4], ['Chicken Road', 4], ['Scratch Card', 4], ['Cases', 4], ['Rock Paper Scissors', 4]];
+ART.videoslot = '<svg viewBox="0 0 120 90"><rect x="6" y="14" width="108" height="62" rx="10" fill="#3b2e9e"/>' + [0,1,2,3,4].map((i) => `<rect x="${12 + i * 20}" y="20" width="17" height="50" rx="4" fill="#1a1d48"/>`).join('') + '<circle cx="60" cy="45" r="9" fill="#ff3d81"/><ellipse cx="60" cy="45" rx="14" ry="4" fill="none" stroke="#ffc53d" stroke-width="2" transform="rotate(-20 60 45)"/><text x="20" y="50" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="14" fill="#ff4766">A</text><text x="40" y="50" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="14" fill="#2fd67a">J</text><text x="80" y="50" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="14" fill="#b18cff">Q</text><text x="100" y="50" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="14" fill="#ff9f3d">K</text><text x="60" y="88" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="9" fill="#ffc53d">FREE SPINS ×3</text></svg>';
+ART.chicken = '<svg viewBox="0 0 120 90"><rect x="0" y="0" width="120" height="90" fill="#272a48"/>' + [30, 60, 90].map((x) => `<path d="M${x} 0v90" stroke="rgba(255,255,255,.35)" stroke-width="2" stroke-dasharray="8 6"/>`).join('') + '<rect x="66" y="6" width="18" height="24" rx="4" fill="#22d3ee"/><circle cx="45" cy="56" r="13" fill="#3b3f66" stroke="#ffc53d" stroke-width="2"/><text x="45" y="60" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="9" fill="#fff">1.21×</text><ellipse cx="18" cy="56" rx="9" ry="8" fill="#fff"/><circle cx="23" cy="48" r="5" fill="#fff"/><circle cx="22" cy="43" r="2.5" fill="#ff4766"/><path d="M27 48l4 1.5-4 1.5z" fill="#ffb21c"/></svg>';
+ART.scratch = '<svg viewBox="0 0 120 90"><rect x="22" y="6" width="76" height="78" rx="10" fill="#ff8a1f"/><rect x="28" y="16" width="64" height="62" rx="6" fill="#fff7e6"/>' + [0,1,2].map((r) => [0,1,2].map((c) => `<rect x="${31 + c * 20}" y="${19 + r * 20}" width="18" height="18" rx="3" fill="${r === 0 && c < 2 ? '#d8dbe8' : '#ffffff'}"/>`).join('')).join('') + '<text x="61" y="72" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="14" fill="#e3123f">7</text><text x="81" y="52" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="14" fill="#e3123f">7</text><text x="41" y="52" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="14" fill="#e3123f">7</text></svg>';
+ART.cases = '<svg viewBox="0 0 120 90">' + ['#4aa8ff', '#b18cff', '#ffc53d', '#ff3d81', '#1fe58f'].map((c, i) => `<rect x="${4 + i * 23}" y="26" width="20" height="36" rx="4" fill="#1a1d48" stroke="${c}" stroke-width="2"/><rect x="${9 + i * 23}" y="36" width="10" height="10" rx="2" fill="${c}" transform="rotate(45 ${14 + i * 23} 41)"/>`).join('') + '<path d="M60 14v62" stroke="#ffc53d" stroke-width="2.5"/></svg>';
+ART.rps = '<svg viewBox="0 0 120 90"><circle cx="32" cy="45" r="24" fill="#2c3180" stroke="#22d3ee" stroke-width="2"/><circle cx="88" cy="45" r="24" fill="#2c3180" stroke="#ff3d81" stroke-width="2"/><path d="M22 46c0-6 4-9 8-9 2-3 5-4 8-3 2-2 6-2 8 1 4 0 6 2 6 6v10c0 9-6 14-15 14s-15-7-15-14z" fill="#ffd9b8" transform="translate(-8 -6) scale(.9)"/><path d="M78 58V40l-4-6c-2-3 2-6 4-3l4 5V26c0-3 5-3 5 0v12-14c0-3 5-3 5 0v14-12c0-3 5-3 5 0v20c0 8-5 12-12 12z" fill="#ffd9b8"/><text x="60" y="50" text-anchor="middle" font-family="Chakra Petch, sans-serif" font-weight="700" font-size="10" fill="#ffc53d">VS</text></svg>';
+const COLORS = { videoslot: '#ff3d81', chicken: '#ffc53d', scratch: '#ff8a1f', cases: '#b18cff', rps: '#22d3ee', blackjack: '#1fe58f', baccarat: '#5aa8ff', videopoker: '#ffc53d', dragontiger: '#ff6b4a', andarbahar: '#ff8a1f', teenpatti: '#ff3d81', crash: '#ff4766', plinko: '#ff3d81', mines: '#1fe58f', dice: '#22d3ee', wheel: '#8b5cf6', limbo: '#1fe58f', hilo: '#22d3ee', slots: '#ffc53d', tower: '#ff8a1f', keno: '#8b5cf6', roulette: '#c4123a', diamonds: '#22d3ee', coinflip: '#ffc53d' };
+const ROADMAP = [];
 
 const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } } };
 
@@ -177,7 +182,7 @@ async function play(gameId, btn) {
 
 const res = await fetch('/api/v1/demo/games').then((r) => r.json()).catch(() => ({ games: [] }));
 const grid = document.getElementById('grid');
-const order = ['crash', 'plinko', 'mines', 'blackjack', 'slots', 'roulette', 'teenpatti', 'andarbahar', 'baccarat', 'dragontiger', 'videopoker', 'hilo', 'tower', 'limbo', 'dice', 'keno', 'wheel', 'diamonds', 'coinflip'];
+const order = ['crash', 'videoslot', 'plinko', 'mines', 'chicken', 'blackjack', 'slots', 'roulette', 'teenpatti', 'andarbahar', 'baccarat', 'dragontiger', 'videopoker', 'hilo', 'tower', 'limbo', 'dice', 'keno', 'wheel', 'diamonds', 'coinflip', 'cases', 'scratch', 'rps'];
 res.games.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)).forEach((g) => {
   const card = document.createElement('article');
   card.className = 'game';
@@ -189,8 +194,9 @@ res.games.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)).forEach((g) 
   btn.addEventListener('click', () => play(g.id, btn));
   grid.append(card);
 });
-document.getElementById('fact-games').textContent = res.games.length || 19;
-document.getElementById('roadmap').innerHTML = ROADMAP.map(([n, p]) => `<span>${n}<b>Phase ${p}</b></span>`).join('');
+document.getElementById('fact-games').textContent = res.games.length || 24;
+if (ROADMAP.length) document.getElementById('roadmap').innerHTML = ROADMAP.map(([n, p]) => `<span>${n}<b>Phase ${p}</b></span>`).join('');
+else document.getElementById('roadmap-sec').hidden = true;
 
 // hero: a slowly falling plinko field with drifting multipliers
 const cv = document.getElementById('hero'), ctx = cv.getContext('2d');
