@@ -18,16 +18,19 @@ from .games import GAMES
 def simulate(game_id: str, params: dict, rounds: int, rtp: float, seed: int | None = None) -> dict:
     engine = GAMES[game_id]
     rand = random.Random(seed).random
-    total = total_sq = best = 0.0
+    total = total_sq = best = staked = 0.0
     hits = 0
     for _ in range(rounds):
-        m = engine.simulate_once(rand, params, rtp)
+        out = engine.simulate_once(rand, params, rtp)
+        m, stake = out if isinstance(out, tuple) else (out, 1)
         total += m
         total_sq += m * m
+        staked += stake
         hits += m > 0
-        best = max(best, m)
-    mean = total / rounds
-    sd = math.sqrt(max(0.0, total_sq / rounds - mean * mean))
+        best = max(best, m / stake)
+    mean = total / staked  # RTP = everything returned / everything staked
+    per_round = total / rounds
+    sd = math.sqrt(max(0.0, total_sq / rounds - per_round * per_round)) * rounds / staked
     return {
         "game_id": game_id,
         "params": params,

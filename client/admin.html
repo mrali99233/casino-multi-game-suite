@@ -115,7 +115,7 @@
 </div>
 <script type="module">
 const $ = (s) => document.querySelector(s);
-const SIM_DEFAULTS = { crash: { cashout: 2 }, plinko: { rows: 16, risk: 'high' }, mines: { mines: 3, picks: 5 }, dice: { target: 50.5, condition: 'over' }, wheel: { risk: 'medium' }, limbo: { target: 10 }, hilo: { streak: 3 }, slots: {}, tower: { difficulty: 'medium', rows: 4 }, keno: { numbers: [3, 8, 15, 22, 31], risk: 'medium' }, roulette: { chips: [{ type: 'red', amount: 100 }] }, diamonds: {}, coinflip: { side: 'heads' } };
+const SIM_DEFAULTS = { crash: { cashout: 2 }, plinko: { rows: 16, risk: 'high' }, mines: { mines: 3, picks: 5 }, dice: { target: 50.5, condition: 'over' }, wheel: { risk: 'medium' }, limbo: { target: 10 }, hilo: { streak: 3 }, slots: {}, tower: { difficulty: 'medium', rows: 4 }, keno: { numbers: [3, 8, 15, 22, 31], risk: 'medium' }, roulette: { chips: [{ type: 'red', amount: 100 }] }, diamonds: {}, coinflip: { side: 'heads' }, blackjack: {}, baccarat: { chips: [{ type: 'banker', amount: 100 }] }, videopoker: {}, dragontiger: { chips: [{ type: 'dragon', amount: 100 }] }, andarbahar: { chips: [{ type: 'andar', amount: 100 }] }, teenpatti: { chips: [{ type: 'pair_plus', amount: 100 }] } };
 let token = '';
 try { token = sessionStorage.getItem('cm-admin') || ''; } catch (e) { /* ignore */ }
 const fmt = (minor) => (minor / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -138,16 +138,17 @@ async function load() {
   $('#games').innerHTML = stats.games.map((s) => {
     const g = byId[s.game_id], [lo, hi] = g.rtp_range;
     const left = (v) => Math.max(0, Math.min(100, ((v - 0.85) / 0.15) * 100));
+    const fixed = lo === hi;
     return `<tr data-id="${s.game_id}">
       <td><b>${s.name}</b><br><span class="note">${g.category} · ${g.kind}${g.overrides.length ? ` · ${g.overrides.length} operator override${g.overrides.length > 1 ? 's' : ''}` : ''}</span></td>
       <td class="n">${s.rounds.toLocaleString()}</td><td class="n">${fmt(s.wagered)}</td><td class="n">${fmt(s.paid)}</td>
       <td><div class="bar" title="actual ${pct(s.actual_rtp)} / target ${pct(s.configured_rtp)}"><em style="width:${s.actual_rtp === null ? 0 : left(s.actual_rtp)}%"></em><i style="left:${left(s.configured_rtp)}%"></i></div><span class="note">${s.actual_rtp === null ? 'no rounds' : `${pct(s.actual_rtp)} over ${s.rounds} round${s.rounds === 1 ? '' : 's'}`}</span></td>
-      <td><div class="rtp-row"><input type="range" min="${lo * 100}" max="${hi * 100}" step="0.5" value="${g.config.rtp * 100}" aria-label="${s.name} target RTP"><b>${pct(g.config.rtp, 1)}</b></div></td>
+      <td><div class="rtp-row"><input type="range" min="${lo * 100}" max="${hi * 100}" step="${fixed ? 1 : 0.05}" value="${g.config.rtp * 100}" aria-label="${s.name} target RTP" ${fixed ? 'disabled title="Fixed by the game rules"' : ''}><b>${pct(g.config.rtp, 2)}</b></div></td>
       <td><button class="mini primary" disabled>Save</button></td></tr>`;
   }).join('');
   document.querySelectorAll('#games tr').forEach((tr) => {
     const range = tr.querySelector('input'), label = tr.querySelector('b'), save = tr.querySelector('button');
-    range.addEventListener('input', () => { label.textContent = `${(+range.value).toFixed(1)}%`; save.disabled = false; });
+    range.addEventListener('input', () => { label.textContent = `${(+range.value).toFixed(2)}%`; save.disabled = false; });
     save.addEventListener('click', async () => {
       save.disabled = true; save.textContent = 'Saving…';
       try { await call('PUT', `/api/v1/admin/games/${tr.dataset.id}/config`, { rtp: +range.value / 100 }); save.textContent = 'Saved'; setTimeout(() => { save.textContent = 'Save'; }, 1500); load(); }

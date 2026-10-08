@@ -20,9 +20,17 @@ seamless wallets, per-operator RTP control, and polished HTML5 Canvas game clien
 | Wheel | Instant, 30 segments, 3 risks | segment table fitted to RTP | 96% |
 | Diamonds | Instant, 5 gems × 7 colours | pattern odds enumerated over 7⁵ draws | 98% |
 | Coin Flip | Instant | 2 × RTP on a correct call | 98% |
+| Blackjack | Multi-step, double and split (extra stakes mid-round) | S17, infinite shoe; RTP picks 3:2 or 6:5 | 99.5% |
+| Baccarat | Instant, Player / Banker / Tie / pairs | punto banco rules, exact outcome odds | 98.94% (fixed) |
+| Video Poker | Multi-step, Jacks or Better | RTP picks the 9/6 … 6/5 paytable | 97.30% (8/5) |
+| Dragon Tiger | Instant | win and tie returns fitted to RTP | 97% |
+| Andar Bahar | Instant, single deck | exact side odds C(51 − j, 2) / C(51, 3) | 97% |
+| Teen Patti | Instant, A vs B + Pair Plus | suit tie-break makes A/B exactly 50/50; Pair Plus fitted over all 22,100 hands | 97% |
 
 Every multiplier is rounded **down** to 0.01×, so a game's expected return never exceeds its configured RTP.
-Roulette keeps the standard European payouts, so its RTP is fixed by the rules.
+Roulette and Baccarat keep their standard payouts, so their RTP is fixed by the rules. Blackjack and
+Video Poker returns depend on the player's decisions; their RTP setting chooses a rule variant and the
+quoted figure assumes basic (Blackjack) or optimal (Video Poker) strategy.
 
 ## Quick start
 
@@ -76,7 +84,8 @@ open the `launch_url`, and either fund a transfer wallet or answer seamless debi
 ## Adding a game
 
 1. Write `provider/games/<id>.py`: a `GameEngine` with `validate`, `floats_needed`, `resolve` (or a
-   `StatefulEngine` with `start`, `act`, `multiplier_x100`), plus `theoretical_rtp` and `describe`.
+   `StatefulEngine` with `start`, `act`, `multiplier_x100`, and optionally `extra_units` for mid-round
+   stakes or `settle_on_start` for rounds that can end on the deal), plus `theoretical_rtp` and `describe`.
 2. Register it in `provider/games/__init__.py`.
 3. Write `client/games/<id>.js` exporting `mount(ctx)` and `rules`; the shared SDK gives you the shell,
    wallet display, fairness and history modals, particles, tweens and sounds.
@@ -84,5 +93,4 @@ open the `launch_url`, and either fund a transfer wallet or answer seamless debi
 
 ## Roadmap
 
-Phase 3 adds the card tables (Blackjack, Baccarat, Video Poker, Dragon Tiger, Andar Bahar, Teen Patti);
 Phase 4 adds a 5×3 video slot with free spins, Chicken Road, Scratch Card, Cases and Rock Paper Scissors.

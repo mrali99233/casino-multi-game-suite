@@ -26,8 +26,8 @@ class Step:
     """Result of one player action in a stateful round."""
 
     state: dict[str, Any]
-    status: str  # "continue" | "lost" | "cashout" (forced, e.g. board cleared)
-    multiplier_x100: int = 0
+    status: str  # "continue" | "lost" | "cashout" (forced, e.g. board cleared, or final settlement)
+    multiplier_x100: int = 0  # in units of the opening bet
 
 
 class GameEngine:
@@ -63,7 +63,8 @@ class GameEngine:
         """Hook for games whose params carry their own stake breakdown."""
 
     def simulate_once(self, rand, params: dict[str, Any], rtp: float) -> float:
-        """One round with a plain PRNG (``rand()`` -> float in [0, 1)); returns the multiplier."""
+        """One round with a plain PRNG (``rand()`` -> float in [0, 1)). Returns the multiplier, or
+        (returned, staked) for games where the stake can grow during the round."""
         p = self.validate(params)
         return self.resolve([rand() for _ in range(self.floats_needed(p))], p, rtp).multiplier_x100 / 100
 
@@ -108,3 +109,12 @@ class StatefulEngine(GameEngine):
     def view(self, state: dict, params: dict[str, Any], rtp: float) -> dict[str, Any]:
         """Extra public info for the client (next multiplier, odds...)."""
         return {}
+
+    def extra_units(self, state: dict, params: dict[str, Any], action: dict[str, Any]) -> int:
+        """Additional stakes (in units of the opening bet) an action needs, e.g. a blackjack
+        double or split. Must raise ParamError for an illegal action: it runs before any debit."""
+        return 0
+
+    def settle_on_start(self, secret: dict, state: dict, params: dict[str, Any], rtp: float) -> Step | None:
+        """Rounds that can end on the deal (a blackjack) return the final Step here."""
+        return None

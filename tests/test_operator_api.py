@@ -154,3 +154,21 @@ def test_seamless_credit_failure_is_retried_then_parked(client, casino):
     assert fixed["status"] == "settled" and fixed["payout"] == payout
     with SessionLocal() as db:
         assert db.query(Transaction).filter(Transaction.round_id == rid, Transaction.kind == "credit", Transaction.status == "ok").count() == 1
+
+
+def test_seamless_blackjack_double_sends_second_debit(client, casino):
+    fake, op = casino
+    s = op.request("POST", "/api/v1/operator/sessions", {"player_id": "bj1", "game_id": "blackjack"}).json()
+    h = {"Authorization": f"Bearer {s['token']}"}
+    for _ in range(30):
+        r = client.post("/api/v1/client/round/start", json={"amount": 500, "params": {}}, headers=h).json()
+        if r["status"] == "open":
+            break
+    assert r["status"] == "open"
+    start = len(fake.calls)
+    d = client.post("/api/v1/client/round/act", json={"action": {"move": "double"}}, headers=h).json()
+    assert fake.calls[start:] == ["debit", "credit"]
+    assert d["bet"] == 1000 and fake.balance == d["balance"]
+    with SessionLocal() as db:
+        kinds = [t.kind for t in db.query(Transaction).filter(Transaction.round_id == d["round_id"]).order_by(Transaction.created_at)]
+    assert kinds == ["debit", "debit", "credit"]

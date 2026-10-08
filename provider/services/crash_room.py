@@ -364,7 +364,7 @@ class CrashRoom:
             rnd.result = {"crash": self.state.crash_x100 / 100, "cashout": mult / 100 if mult else None}
             payout = min(bet.amount * mult // 100, cfg.max_win)
             try:
-                return settle(db, session, rnd, payout, ledger.balance(db, session.player, session.is_demo))
+                return settle(db, session, rnd, payout)
             except GameError:  # credit_pending: win is stored and retried later
                 return None
 

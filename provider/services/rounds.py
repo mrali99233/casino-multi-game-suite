@@ -37,7 +37,7 @@ def round_view(rnd: Round, balance: int | None = None, reveal: bool = False) -> 
         "created_at": rnd.created_at.isoformat(),
     }
     if reveal and rnd.secret:
-        view["result"] |= rnd.secret
+        view["result"] |= {k: v for k, v in rnd.secret.items() if not k.startswith("_")}
     if balance is not None:
         view["balance"] = balance
     return view
@@ -98,7 +98,7 @@ def _debit_tx_id(db: Session, rnd: Round) -> str | None:
     return db.scalar(select(Transaction.id).where(Transaction.round_id == rnd.id, Transaction.kind == "debit", Transaction.status == "ok"))
 
 
-def settle(db: Session, session: GameSession, rnd: Round, payout: int, balance: int) -> int:
+def settle(db: Session, session: GameSession, rnd: Round, payout: int, balance: int | None = None) -> int:
     """Credit the payout and close the round. Seamless operators also receive 0-amount
     credits so every round they debited is explicitly closed."""
     rnd.payout = payout
@@ -111,6 +111,8 @@ def settle(db: Session, session: GameSession, rnd: Round, payout: int, balance: 
             rnd.status = "credit_pending"
             db.commit()
             raise GameError("CREDIT_PENDING", "Your win is recorded and will be paid shortly", 502) from None
+    elif balance is None:
+        balance = ledger.balance(db, session.player, session.is_demo)
     rnd.status = "settled"
     rnd.settled_at = utcnow()
     db.commit()
@@ -123,7 +125,7 @@ def retry_credit(db: Session, rnd: Round) -> Round:
     session = db.get(GameSession, rnd.session_token)
     if session is None:
         raise GameError("NO_SESSION", "Original session not found", 404)
-    settle(db, session, rnd, rnd.payout, 0)
+    settle(db, session, rnd, rnd.payout)
     return rnd
 
 
@@ -161,13 +163,22 @@ def open_round(db: Session, session: GameSession) -> Round | None:
     )
 
 
+def _unit(rnd: Round) -> int:
+    """Opening stake. Multi-step games quote multipliers against it, even after extra stakes."""
+    return (rnd.secret or {}).get("_unit", rnd.bet)
+
+
 def stateful_view(rnd: Round, balance: int | None = None) -> dict:
     engine = GAMES[rnd.game_id]
     finished = rnd.status != "open"
     view = round_view(rnd, balance, reveal=finished)
     view |= engine.view(rnd.result, rnd.params, rnd.rtp)
-    view["cashout_multiplier"] = engine.multiplier_x100(rnd.result, rnd.params, rnd.rtp) / 100 if not finished else rnd.multiplier_x100 / 100
-    view["cashout_amount"] = rnd.bet * engine.multiplier_x100(rnd.result, rnd.params, rnd.rtp) // 100 if not finished else rnd.payout
+    view["unit"] = _unit(rnd)
+    if finished:
+        view["cashout_multiplier"], view["cashout_amount"] = rnd.multiplier_x100 / 100, rnd.payout
+    else:
+        m = engine.multiplier_x100(rnd.result, rnd.params, rnd.rtp)
+        view["cashout_multiplier"], view["cashout_amount"] = m / 100, _unit(rnd) * m // 100
     return view
 
 
@@ -187,9 +198,13 @@ def round_start(db: Session, session: GameSession, amount: int, params: dict) ->
     _check_bet(cfg, amount)
     rnd, pair = _open_round(db, session, amount, params, cfg)
     secret, state = engine.start(rng.floats(pair.server_seed, pair.client_seed, rnd.nonce, engine.floats_needed(params)), params, cfg.rtp)
-    rnd.secret, rnd.result = secret, state
+    rnd.secret, rnd.result = {**secret, "_unit": amount}, state
     db.commit()
     balance = _debit(db, session, rnd)
+    step = engine.settle_on_start(secret, state, params, cfg.rtp)
+    if step is not None:
+        rnd.result = step.state
+        return _close(db, session, rnd, step.multiplier_x100 if step.status != "lost" else 0)
     return stateful_view(rnd, balance)
 
 
@@ -201,18 +216,34 @@ def _require_open(db: Session, session: GameSession) -> Round:
 
 
 def _close(db: Session, session: GameSession, rnd: Round, mult_x100: int) -> dict:
+    """Settle a multi-step round. ``mult_x100`` is in units of the opening bet; the stored
+    multiplier is payout / total staked so reports stay comparable across games."""
     cfg = effective_config(db, session.operator_id, session.game_id)
-    rnd.multiplier_x100 = mult_x100
-    payout = min(rnd.bet * mult_x100 // 100, cfg.max_win)
-    balance = settle(db, session, rnd, payout, ledger.balance(db, session.player, session.is_demo))
+    payout = min(_unit(rnd) * mult_x100 // 100, cfg.max_win)
+    rnd.multiplier_x100 = payout * 100 // rnd.bet if rnd.bet else 0
+    balance = settle(db, session, rnd, payout)
     return stateful_view(rnd, balance)
 
 
 def round_act(db: Session, session: GameSession, action: dict) -> dict:
     engine = _stateful_engine(session)
     rnd = _require_open(db, session)
+    action = action or {}
+    balance = None
     try:
-        step = engine.act(rnd.secret, rnd.result, rnd.params, rnd.rtp, action or {})
+        extra = engine.extra_units(rnd.result, rnd.params, action)
+    except ParamError as exc:
+        raise GameError("BAD_ACTION", str(exc)) from None
+    if extra:
+        cfg = effective_config(db, session.operator_id, session.game_id)
+        stake = extra * _unit(rnd)
+        if not cfg.enabled:
+            raise GameError("GAME_DISABLED", "This game is currently disabled", 403)
+        balance, _ = ledger.debit(db, session.player, session.is_demo, rnd, stake)
+        rnd.bet += stake
+        db.commit()
+    try:
+        step = engine.act(rnd.secret, rnd.result, rnd.params, rnd.rtp, action)
     except ParamError as exc:
         raise GameError("BAD_ACTION", str(exc)) from None
     rnd.result = step.state
@@ -222,7 +253,7 @@ def round_act(db: Session, session: GameSession, action: dict) -> dict:
         return _close(db, session, rnd, step.multiplier_x100)
     rnd.multiplier_x100 = step.multiplier_x100
     db.commit()
-    return stateful_view(rnd)
+    return stateful_view(rnd, balance)
 
 
 def round_cashout(db: Session, session: GameSession) -> dict:

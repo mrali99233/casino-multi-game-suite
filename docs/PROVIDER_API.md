@@ -50,11 +50,14 @@ POST /api/v1/operator/sessions
 
 Open `launch_url` in an iframe or a new window. `mode: "demo"` gives the player play money on the
 provider side and never touches your wallet. Game ids: `crash`, `plinko`, `mines`, `slots`, `roulette`,
-`hilo`, `tower`, `limbo`, `dice`, `keno`, `wheel`, `diamonds`, `coinflip`
+`hilo`, `tower`, `limbo`, `dice`, `keno`, `wheel`, `diamonds`, `coinflip`, `blackjack`, `baccarat`,
+`videopoker`, `dragontiger`, `andarbahar`, `teenpatti`
 (`GET /api/v1/operator/games` lists them with your current RTP and limits).
 
-Multi-step games (`mines`, `hilo`, `tower`) debit when the round starts and credit when the player cashes
-out or loses, so a round can stay open between the two calls. An open round is resumed when the player
+Multi-step games (`mines`, `hilo`, `tower`, `blackjack`, `videopoker`) debit when the round starts and credit
+when the player cashes out or loses, so a round can stay open between the two calls. Blackjack doubles and
+splits send an extra `debit` for the same `round_id` before the card is dealt; the final `credit` covers
+every stake in the round. An open round is resumed when the player
 relaunches the game.
 
 ## 4. Wallets
@@ -110,7 +113,9 @@ PUT /api/v1/operator/games/plinko/config
 
 RTP must sit inside the game's range (`rtp_range` in the games list, usually 0.90–0.99). RTP changes the
 payout table, never the RNG: every round stays verifiable. The crash room is shared by all operators,
-so its RTP is set provider-wide. Roulette uses standard European payouts, so its RTP is fixed at 97.30%.
+so its RTP is set provider-wide. Roulette (97.30%) and Baccarat (98.94% on Banker) use standard payouts,
+so their RTP is fixed. For Blackjack the RTP picks the blackjack payout (3:2 at 0.995, 6:5 at 0.981); for
+Video Poker it picks the Jacks or Better paytable (9/6, 9/5, 8/5, 7/5 or 6/5).
 
 ## 7. Fairness
 
