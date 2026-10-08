@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casino Matrix Back Office</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="/client/sdk/theme.css">
+<style>
+  html, body { height: auto; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 18px 20px 60px; display: flex; flex-direction: column; gap: 22px; }
+  .top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .top .logo { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, var(--violet), var(--pink)); font-family: var(--f-display); font-weight: 700; }
+  .top h1 { margin: 0; font-family: var(--f-display); font-size: 20px; letter-spacing: .05em; text-transform: uppercase; }
+  .top .spacer { flex: 1; }
+  .card { background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; min-width: 0; }
+  .card h2 { margin: 0 0 4px; font-family: var(--f-display); font-size: 18px; letter-spacing: .04em; text-transform: uppercase; }
+  .card > p { margin: 0 0 14px; color: var(--muted); }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .kpi { background: var(--bg-1); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 14px 16px; }
+  .kpi span { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+  .kpi b { display: block; font-family: var(--f-display); font-size: 26px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 760px; }
+  th { text-align: left; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 12px 10px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  td.n { font-family: var(--f-display); }
+  .bar { position: relative; height: 8px; width: 120px; border-radius: 4px; background: var(--bg-3); }
+  .bar i { position: absolute; top: -3px; width: 2px; height: 14px; background: var(--gold); }
+  .bar em { position: absolute; top: 0; left: 0; bottom: 0; border-radius: 4px; background: var(--cyan); }
+  .rtp-row { display: flex; align-items: center; gap: 10px; }
+  .rtp-row input[type=range] { width: 160px; accent-color: var(--violet); }
+  .rtp-row b { font-family: var(--f-display); min-width: 64px; font-size: 16px; color: var(--violet-2); }
+  .mini { border: 1px solid var(--line); background: var(--bg-3); color: var(--text); border-radius: 9px; padding: 7px 12px; font-weight: 600; }
+  .mini.primary { background: var(--violet); border-color: var(--violet); }
+  .mini:disabled { opacity: .5; }
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; }
+  .form { display: grid; gap: 12px; }
+  .form .row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+  .out { background: var(--bg-0); border: 1px solid var(--line); border-radius: 12px; padding: 12px; font-family: var(--f-mono); font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; color: #cfd3ff; min-height: 60px; }
+  .pillv { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--bg-3); color: var(--muted); }
+  .ok { color: var(--green); } .warn { color: var(--gold); }
+  .login { max-width: 420px; margin: 12vh auto 0; display: grid; gap: 14px; }
+  @media (max-width: 860px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grid2 { grid-template-columns: minmax(0, 1fr); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div class="logo">CM</div><h1>Back office</h1><div class="spacer"></div><a class="mini" href="/" style="text-decoration:none">Lobby</a><button class="mini" id="logout" hidden>Sign out</button></div>
+
+  <form class="card login" id="login">
+    <h2>Sign in</h2>
+    <p style="margin:0;color:var(--muted)">Use the admin token from the server's <code>CMP_ADMIN_TOKEN</code> setting.</p>
+    <div class="field"><label for="tok">Admin token</label><div class="input"><input id="tok" type="password" autocomplete="current-password"></div></div>
+    <button class="btn btn-bet" type="submit">Open back office</button>
+    <p class="note" id="login-err"></p>
+  </form>
+
+  <div id="app" hidden style="display:flex;flex-direction:column;gap:22px">
+    <div class="kpis">
+      <div class="kpi"><span>Rounds</span><b id="k-rounds">0</b></div>
+      <div class="kpi"><span>Wagered</span><b id="k-wager">0</b></div>
+      <div class="kpi"><span>Gross gaming revenue</span><b id="k-ggr">0</b></div>
+      <div class="kpi"><span>Actual RTP</span><b id="k-rtp">—</b></div>
+    </div>
+
+    <div class="card">
+      <h2>Games & RTP</h2>
+      <p>Provider-wide defaults. Operators can override RTP and limits for their own casino (except the shared crash room). The marker shows the configured RTP; the bar shows what players actually received.</p>
+      <div class="scroll"><table>
+        <thead><tr><th>Game</th><th>Rounds</th><th>Wagered</th><th>Paid</th><th>Actual vs target</th><th>Target RTP</th><th></th></tr></thead>
+        <tbody id="games"></tbody>
+      </table></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>Simulator</h2>
+        <p>Plays the real engine with a seeded PRNG to confirm the RTP before you ship a change.</p>
+        <form class="form" id="sim">
+          <div class="row">
+            <div class="field"><label for="sim-game">Game</label><div class="input"><select id="sim-game"></select></div></div>
+            <div class="field"><label for="sim-rounds">Rounds</label><div class="input"><input id="sim-rounds" value="200000"></div></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="sim-params">Params (JSON)</label><div class="input"><input id="sim-params" value='{"rows": 16, "risk": "high"}'></div></div>
+            <div class="field"><label for="sim-rtp">RTP</label><div class="input"><input id="sim-rtp" value="0.97"></div></div>
+          </div>
+          <button class="btn btn-ghost" type="submit">Run simulation</button>
+          <div class="out" id="sim-out">Results appear here.</div>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Operators</h2>
+        <p>Each casino gets an API key and secret. The secret is shown once.</p>
+        <div id="ops" style="display:grid;gap:8px;margin-bottom:14px"></div>
+        <form class="form" id="op-form">
+          <div class="row">
+            <div class="field"><label for="op-id">Operator id</label><div class="input"><input id="op-id" placeholder="lucky-casino" required pattern="[a-z0-9_-]{2,64}"></div></div>
+            <div class="field"><label for="op-name">Name</label><div class="input"><input id="op-name" placeholder="Lucky Casino" required></div></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="op-mode">Wallet</label><div class="input"><select id="op-mode"><option value="transfer">Transfer (we hold balances)</option><option value="seamless">Seamless (call operator)</option></select></div></div>
+            <div class="field"><label for="op-url">Wallet URL</label><div class="input"><input id="op-url" placeholder="https://casino.example/wallet"></div></div>
+          </div>
+          <button class="btn btn-ghost" type="submit">Create operator</button>
+          <div class="out" id="op-out" hidden></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module">
+const $ = (s) => document.querySelector(s);
+const SIM_DEFAULTS = { crash: { cashout: 2 }, plinko: { rows: 16, risk: 'high' }, mines: { mines: 3, picks: 5 }, dice: { target: 50.5, condition: 'over' }, wheel: { risk: 'medium' }, limbo: { target: 10 }, hilo: { streak: 3 }, slots: {}, tower: { difficulty: 'medium', rows: 4 }, keno: { numbers: [3, 8, 15, 22, 31], risk: 'medium' }, roulette: { chips: [{ type: 'red', amount: 100 }] }, diamonds: {}, coinflip: { side: 'heads' }, blackjack: {}, baccarat: { chips: [{ type: 'banker', amount: 100 }] }, videopoker: {}, dragontiger: { chips: [{ type: 'dragon', amount: 100 }] }, andarbahar: { chips: [{ type: 'andar', amount: 100 }] }, teenpatti: { chips: [{ type: 'pair_plus', amount: 100 }] }, videoslot: {}, chicken: { difficulty: 'medium', lanes: 4 }, scratch: {}, cases: { difficulty: 'medium' }, rps: { wins: 3 } };
+let token = '';
+try { token = sessionStorage.getItem('cm-admin') || ''; } catch (e) { /* ignore */ }
+const fmt = (minor) => (minor / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const pct = (v, d = 2) => (v === null || v === undefined ? '—' : `${(v * 100).toFixed(d)}%`);
+
+async function call(method, path, body) {
+  const res = await fetch(path, { method, headers: { 'X-Admin-Token': token, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error?.message || `Request failed (${res.status})`);
+  return data;
+}
+
+async function load() {
+  const [stats, games, ops] = await Promise.all([call('GET', '/api/v1/admin/stats'), call('GET', '/api/v1/admin/games'), call('GET', '/api/v1/admin/operators')]);
+  $('#login').hidden = true; $('#app').hidden = false; $('#logout').hidden = false;
+  let n = 0, w = 0, p = 0;
+  stats.games.forEach((g) => { n += g.rounds; w += g.wagered; p += g.paid; });
+  $('#k-rounds').textContent = n.toLocaleString(); $('#k-wager').textContent = fmt(w); $('#k-ggr').textContent = fmt(w - p); $('#k-rtp').textContent = w ? pct(p / w) : '—';
+  const byId = Object.fromEntries(games.games.map((g) => [g.id, g]));
+  $('#games').innerHTML = stats.games.map((s) => {
+    const g = byId[s.game_id], [lo, hi] = g.rtp_range;
+    const left = (v) => Math.max(0, Math.min(100, ((v - 0.85) / 0.15) * 100));
+    const fixed = lo === hi;
+    return `<tr data-id="${s.game_id}">
+      <td><b>${s.name}</b><br><span class="note">${g.category} · ${g.kind}${g.overrides.length ? ` · ${g.overrides.length} operator override${g.overrides.length > 1 ? 's' : ''}` : ''}</span></td>
+      <td class="n">${s.rounds.toLocaleString()}</td><td class="n">${fmt(s.wagered)}</td><td class="n">${fmt(s.paid)}</td>
+      <td><div class="bar" title="actual ${pct(s.actual_rtp)} / target ${pct(s.configured_rtp)}"><em style="width:${s.actual_rtp === null ? 0 : left(s.actual_rtp)}%"></em><i style="left:${left(s.configured_rtp)}%"></i></div><span class="note">${s.actual_rtp === null ? 'no rounds' : `${pct(s.actual_rtp)} over ${s.rounds} round${s.rounds === 1 ? '' : 's'}`}</span></td>
+      <td><div class="rtp-row"><input type="range" min="${lo * 100}" max="${hi * 100}" step="${fixed ? 1 : 0.05}" value="${g.config.rtp * 100}" aria-label="${s.name} target RTP" ${fixed ? 'disabled title="Fixed by the game rules"' : ''}><b>${pct(g.config.rtp, 2)}</b></div></td>
+      <td><button class="mini primary" disabled>Save</button></td></tr>`;
+  }).join('');
+  document.querySelectorAll('#games tr').forEach((tr) => {
+    const range = tr.querySelector('input'), label = tr.querySelector('b'), save = tr.querySelector('button');
+    range.addEventListener('input', () => { label.textContent = `${(+range.value).toFixed(2)}%`; save.disabled = false; });
+    save.addEventListener('click', async () => {
+      save.disabled = true; save.textContent = 'Saving…';
+      try { await call('PUT', `/api/v1/admin/games/${tr.dataset.id}/config`, { rtp: +range.value / 100 }); save.textContent = 'Saved'; setTimeout(() => { save.textContent = 'Save'; }, 1500); load(); }
+      catch (e) { save.textContent = 'Save'; save.disabled = false; alertBox(e.message); }
+    });
+  });
+  const simSel = $('#sim-game'), keep = simSel.value;
+  simSel.innerHTML = games.games.map((g) => `<option value="${g.id}">${g.name}</option>`).join('');
+  if (keep) simSel.value = keep; else $('#sim-params').value = JSON.stringify(SIM_DEFAULTS[simSel.value] || {});
+  $('#ops').innerHTML = ops.operators.map((o) => `<div class="kpi" style="padding:10px 12px"><b style="font-size:15px">${o.name} <span class="pillv">${o.wallet_mode}</span></b><span style="text-transform:none;letter-spacing:0"><code>${o.id}</code> · key <code>${o.api_key}</code></span></div>`).join('');
+}
+function alertBox(msg) { $('#sim-out').textContent = msg; }
+
+$('#login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  token = $('#tok').value.trim();
+  try { await load(); try { sessionStorage.setItem('cm-admin', token); } catch (er) { /* ignore */ } }
+  catch (er) { $('#login-err').textContent = er.message; }
+});
+$('#logout').addEventListener('click', () => { try { sessionStorage.removeItem('cm-admin'); } catch (e) { /* ignore */ } location.reload(); });
+$('#sim-game').addEventListener('change', () => { $('#sim-params').value = JSON.stringify(SIM_DEFAULTS[$('#sim-game').value] || {}); });
+$('#sim').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const out = $('#sim-out'); out.textContent = 'Running…';
+  try {
+    const r = await call('POST', '/api/v1/admin/simulate', { game_id: $('#sim-game').value, rounds: +$('#sim-rounds').value, params: JSON.parse($('#sim-params').value || '{}'), rtp: +$('#sim-rtp').value });
+    const diff = Math.abs(r.simulated_rtp - r.theoretical_rtp), ok = diff <= 4 * r.std_error + 0.002;
+    out.innerHTML = `theoretical RTP  ${pct(r.theoretical_rtp, 3)}\nsimulated RTP    ${pct(r.simulated_rtp, 3)}  ±${pct(r.std_error, 3)}\nhit rate         ${pct(r.hit_rate, 2)}\nbiggest win      ${r.max_multiplier}×\nrounds           ${r.rounds.toLocaleString()}\n<span class="${ok ? 'ok' : 'warn'}">${ok ? 'Within expected variance' : 'Outside 4σ: check the payout table'}</span>`;
+  } catch (er) { out.textContent = er.message; }
+});
+$('#op-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const out = $('#op-out'); out.hidden = false;
+  try {
+    const r = await call('POST', '/api/v1/admin/operators', { id: $('#op-id').value.trim(), name: $('#op-name').value.trim(), wallet_mode: $('#op-mode').value, wallet_url: $('#op-url').value.trim() || null });
+    out.textContent = `Operator created. Store these now, the secret is not shown again.\n\napi_key:    ${r.api_key}\napi_secret: ${r.api_secret}`;
+    load();
+  } catch (er) { out.textContent = er.message; }
+});
+if (token) load().catch(() => { $('#login').hidden = false; });
+</script>
+</body>
+</html>
