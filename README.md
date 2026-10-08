@@ -37,6 +37,20 @@ Roulette and Baccarat keep their standard payouts, so their RTP is fixed by the 
 Video Poker returns depend on the player's decisions; their RTP setting chooses a rule variant and the
 quoted figure assumes basic (Blackjack) or optimal (Video Poker) strategy.
 
+## Try it
+
+**In the browser, nothing to install (GitHub Codespaces):** on the repository page choose
+**Code → Codespaces → Create codespace**. The server starts by itself and the lobby opens on port 8090.
+
+**On Windows:** install Python 3.11+, download the repository, double-click `start.bat`.
+**On macOS / Linux:** run `./start.sh`.
+
+Then open:
+
+* `/` lobby: every game with 1,000.00 demo credits
+* `/admin` back office: sign in with the admin token (default `change-me-admin-token`)
+* `/docs` API reference
+
 ## Quick start
 
 ```bash

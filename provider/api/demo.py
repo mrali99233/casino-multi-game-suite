@@ -11,7 +11,6 @@ from ..games import GAMES
 from ..models import Operator
 from ..services import players
 from ..services.errors import GameError
-from .operator import launch_url
 from .schemas import DemoSessionIn
 
 router = APIRouter(prefix="/api/v1/demo", tags=["demo"])
@@ -30,4 +29,5 @@ def demo_session(body: DemoSessionIn, db: Session = Depends(get_db)):
     op = db.get(Operator, s.demo_operator_id)
     player_id = body.player_id if body.player_id and body.player_id.isalnum() else "d" + secrets.token_hex(6)
     session = players.create_session(db, op, player_external_id=player_id, game_id=body.game_id, nickname=f"Guest{player_id[-4:]}", is_demo=True, return_url="/")
-    return {"token": session.token, "launch_url": launch_url(session.game_id, session.token), "player_id": player_id}
+    # relative URL: the lobby and the game are served from the same origin, whatever host it runs on
+    return {"token": session.token, "launch_url": f"/play/{session.game_id}?token={session.token}", "player_id": player_id}
